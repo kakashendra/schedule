@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Пожелания по графику</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#f4f6fc;--card:#fff;--line:#e3e7f3;--text:#1c2033;--dim:#7a819b;--acc:#5b5bf0;--acc2:#9a6bff;--wk:#ff6b81;--ok:#1fa97a;--err:#e5484d;--chip:#eef0fb}
+@media (prefers-color-scheme: dark){:root{--bg:#12141f;--card:#1b1e2d;--line:#2a2e44;--text:#eceefa;--dim:#8d94b3;--chip:#252940;--acc:#7c7cff;--acc2:#b08cff}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0) 0 calc(90px + env(safe-area-inset-bottom,0))}
+.hero{padding:22px 18px 40px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-radius:0 0 28px 28px}
+.hero h1{margin:0;font-size:22px}.hero p{margin:4px 0 0;opacity:.9;font-size:14px}
+main{max-width:640px;margin:-24px auto 0;padding:0 14px}
+.tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:16px;margin-bottom:12px;box-shadow:0 4px 18px rgba(60,60,140,.12)}
+.tab{flex:1;font:inherit;font-size:14px;font-weight:600;border:0;background:transparent;color:var(--dim);padding:9px;border-radius:12px;cursor:pointer}
+.tab.on{background:var(--chip);color:var(--acc)}
+.card{background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px;box-shadow:0 2px 10px rgba(60,60,140,.07)}
+.day{font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between}
+.day.wk{color:var(--wk)}.day small{color:var(--dim);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font:inherit;font-size:14px;border:1.5px solid transparent;background:var(--chip);color:var(--text);padding:8px 13px;border-radius:12px;cursor:pointer}
+.chip.sel{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-weight:600}
+.chip.off.sel{background:var(--wk)}
+.custom{display:flex;align-items:center;gap:8px;margin-top:10px}
+input{font:inherit;color:var(--text);background:var(--chip);border:1.5px solid transparent;border-radius:12px;padding:9px 12px;width:100%}
+.custom input{width:auto;flex:1}
+input:focus{outline:none;border-color:var(--acc)}
+label{font-size:13px;color:var(--dim);display:block;margin:0 0 5px}
+.send{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0));max-width:612px;margin:0 auto;font:inherit;font-size:17px;font-weight:700;border:0;border-radius:16px;padding:15px;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 8px 24px rgba(91,91,240,.4);cursor:pointer}
+.send:disabled{opacity:.45;box-shadow:none}
+.msg{text-align:center;font-size:14px;margin:6px 0;min-height:20px;color:var(--ok)}.msg.err{color:var(--err)}
+.scroll{overflow-x:auto;background:var(--card);border-radius:18px;box-shadow:0 2px 10px rgba(60,60,140,.07)}
+table{border-collapse:collapse;min-width:620px;width:100%}
+th,td{padding:8px 5px;text-align:center;font-size:12px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600}th.wk,td.wk{background:rgba(255,107,129,.08)}
+td.n{text-align:left;font-weight:700;font-size:13px;padding-left:12px;min-width:140px}
+td.o{color:var(--dim)}
+.empty{padding:26px;text-align:center;color:var(--dim)}
+.row2{display:flex;gap:8px;margin-top:12px}.row2 button{flex:1}
+.btn{font:inherit;font-weight:600;border:0;background:var(--chip);color:var(--acc);padding:11px;border-radius:12px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="hero"><h1>Пожелания по графику</h1><p id="sub">Загрузка…</p></div>
+<main>
+  <div class="tabs" id="tabs" hidden>
+    <button class="tab on" data-t="me">Мои смены</button>
+    <button class="tab" data-t="all">Таблица</button>
+    <button class="tab" data-t="set">Настройки</button>
+  </div>
+  <section id="me">
+    <div class="card"><label for="fio">Фамилия Имя Отчество</label><input id="fio" placeholder="Иванова Мария Сергеевна" autocomplete="name"></div>
+    <div id="days"></div>
+    <div class="msg" id="msg" role="status"></div>
+    <button class="send" id="send">Отправить</button>
+  </section>
+  <section id="all" hidden>
+    <div class="scroll" id="tbl"></div>
+    <div class="row2"><button class="btn" id="refresh">Обновить</button></div>
+  </section>
+  <section id="set" hidden>
+    <div class="card">
+      <label for="wd">Неделя (любая дата внутри неё)</label><input type="date" id="wd">
+      <label for="dl" style="margin-top:12px">Принимать пожелания до</label><input type="datetime-local" id="dl">
+      <div class="row2"><button class="btn" id="saveSet">Сохранить</button></div>
+      <div class="msg" id="setMsg"></div>
+    </div>
+  </section>
+</main>
+<script>
+/* ===== НАСТРОЙКИ: замените значения ===== */
+var SUPABASE_URL = "https://ВАШ-ПРОЕКТ.supabase.co";
+var SUPABASE_KEY = "ВАШ-ANON-PUBLIC-KEY";
+var ADMIN_IDS = ["123456789"];            // Telegram id администратора (узнать у @userinfobot)
+var SHIFTS = ["08:00-17:00","09:30-18:30","10:00-19:00","13:00-22:00","15:00-22:00"]; // быстрые смены
+/* ======================================= */
+var DN = ["пн","вт","ср","чт","пт","сб","вс"];
+var tg = window.Telegram && window.Telegram.WebApp;
+if(tg){ try{ tg.ready(); tg.expand(); }catch(e){} }
+var $ = function(i){ return document.getElementById(i); };
+var pad = function(n){ return (n < 10 ? "0" : "") + n; };
+var iso = function(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); };
+var ddmm = function(d){ return pad(d.getDate()) + "." + pad(d.getMonth()+1); };
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function monday(d){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; }
+function weekDays(w){ var p = w.split("-").map(Number), o = []; for(var i = 0; i < 7; i++) o.push(new Date(p[0], p[1]-1, p[2]+i)); return o; }
+
+var tu = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+var me = tu ? String(tu.id) : (localStorage.getItem("gid") || (function(){ var r = "web" + Math.random().toString(36).slice(2); try{ localStorage.setItem("gid", r); }catch(e){} return r; })());
+var DEMO = SUPABASE_URL.indexOf("ВАШ") >= 0;
+var isAdmin = DEMO || ADMIN_IDS.indexOf(me) >= 0;
+var settings = null, days = ["","","","","","",""], custom = [], dirty = false, failed = false;
+var mem = { settings: null, wishes: [] };
+function demoApi(path, opt){
+  var m = (opt && opt.method) || "GET", q = path.split("?")[0], b = opt && opt.body;
+  if(q === "settings") { if(m === "POST"){ mem.settings = b; return Promise.resolve(null); } return Promise.resolve(mem.settings ? [mem.settings] : []); }
+  if(m === "POST"){ mem.wishes = mem.wishes.filter(function(x){ return !(x.week === b.week && x.tg_id === b.tg_id); }); mem.wishes.push(b); return Promise.resolve(null); }
+  var mine = path.match(/tg_id=eq\.([^&]+)/), wk = path.match(/week=eq\.([^&]+)/)[1];
+  return Promise.resolve(mem.wishes.filter(function(x){ return x.week === wk && (!mine || x.tg_id === decodeURIComponent(mine[1])); }));
+}
+
+function api(path, opt){
+  opt = opt || {};
+  if(DEMO) return demoApi(path, opt);
+  return fetch(SUPABASE_URL + "/rest/v1/" + path, {
+    method: opt.method || "GET",
+    headers: Object.assign({ apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" }, opt.headers || {}),
+    body: opt.body ? JSON.stringify(opt.body) : undefined
+  }).then(function(r){ if(!r.ok) throw new Error(r.status); return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; }); });
+}
+function closed(){ return !settings || new Date() > new Date(settings.deadline); }
+function say(id, t, err){ var e = $(id); e.textContent = t; e.className = "msg" + (err ? " err" : ""); }
+
+function renderSub(){
+  if(failed) return;
+  if(!settings){ $("sub").textContent = isAdmin ? "Задайте неделю во вкладке «Настройки»" : "Приём пожеланий ещё не открыт"; $("send").disabled = true; return; }
+  var d = weekDays(settings.week), dl = new Date(settings.deadline);
+  $("sub").textContent = ddmm(d[0]) + " – " + ddmm(d[6]) + (closed() ? " · приём закрыт" : " · менять можно до " + ddmm(dl) + " " + pad(dl.getHours()) + ":" + pad(dl.getMinutes()));
+  var l = closed() && !isAdmin; $("send").disabled = l || !settings; $("fio").disabled = l;
+}
+
+function renderDays(){
+  var box = $("days"); box.innerHTML = "";
+  if(!settings){ box.innerHTML = '<div class="card empty">' + (isAdmin ? "Откройте вкладку «Настройки», выберите неделю и срок, и здесь появятся дни со сменами" : "Администратор ещё не открыл приём пожеланий") + '</div>'; return; }
+  var lock = closed() && !isAdmin;
+  weekDays(settings.week).forEach(function(d, i){
+    var v = days[i], isSet = v && v !== "вых" && SHIFTS.indexOf(v) < 0, c = document.createElement("div");
+    c.className = "card";
+    var h = '<div class="day' + (i > 4 ? " wk" : "") + '">' + DN[i] + '<small>' + ddmm(d) + '</small></div><div class="chips">';
+    h += '<button class="chip off' + (v === "вых" ? " sel" : "") + '" data-i="' + i + '" data-v="вых">Выходной</button>';
+    SHIFTS.forEach(function(s){ h += '<button class="chip' + (v === s ? " sel" : "") + '" data-i="' + i + '" data-v="' + s + '">' + s.replace(/:00/g, "") + '</button>'; });
+    h += '<button class="chip' + (custom[i] || isSet ? " sel" : "") + '" data-i="' + i + '" data-v="custom">Своё</button></div>';
+    if(custom[i] || isSet){ var p = (isSet ? v : "").split("-"); h += '<div class="custom"><input type="time" data-i="' + i + '" data-k="0" value="' + (p[0] || "") + '"><span>–</span><input type="time" data-i="' + i + '" data-k="1" value="' + (p[1] || "") + '"></div>'; }
+    c.innerHTML = h; box.appendChild(c);
+    if(lock) c.querySelectorAll("button,input").forEach(function(x){ x.disabled = true; });
+  });
+}
+$("days").addEventListener("click", function(e){
+  var b = e.target.closest(".chip"); if(!b) return; var i = +b.dataset.i, v = b.dataset.v; dirty = true;
+  if(v === "custom"){ custom[i] = true; if(SHIFTS.indexOf(days[i]) >= 0 || days[i] === "вых") days[i] = ""; }
+  else { custom[i] = false; days[i] = v; }
+  renderDays();
+});
+$("days").addEventListener("change", function(e){
+  var t = e.target; if(t.type !== "time") return; var i = +t.dataset.i, box = t.parentNode.querySelectorAll("input"); dirty = true;
+  days[i] = (box[0].value && box[1].value) ? box[0].value + "-" + box[1].value : "";
+});
+
+$("send").addEventListener("click", function(){
+  var name = $("fio").value.trim();
+  if(!name) return say("msg", "Укажите ФИО", true);
+  if(days.some(function(v){ return !v; })) return say("msg", "Выберите смену или выходной на каждый день", true);
+  $("send").disabled = true;
+  api("wishes?on_conflict=week,tg_id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: { week: settings.week, tg_id: me, name: name, days: days, updated_at: new Date().toISOString() } })
+  .then(function(){ dirty = false; try{ localStorage.setItem("fio", name); }catch(e){} say("msg", "Отправлено ✓ Менять можно до закрытия приёма"); if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success"); })
+  .catch(function(){ say("msg", "Не получилось отправить, попробуйте ещё раз", true); })
+  .then(function(){ renderSub(); });
+});
+
+function loadMine(){
+  $("fio").value = localStorage.getItem("fio") || (tu ? [tu.last_name, tu.first_name].filter(Boolean).join(" ") : "");
+  return api("wishes?week=eq." + settings.week + "&tg_id=eq." + encodeURIComponent(me) + "&select=name,days").then(function(r){
+    if(r && r[0]){ $("fio").value = r[0].name; days = r[0].days; custom = []; }
+  });
+}
+function loadAll(){
+  if(!settings) { $("tbl").innerHTML = '<div class="empty">Сначала задайте неделю</div>'; return; }
+  api("wishes?week=eq." + settings.week + "&select=name,days&order=name").then(function(r){
+    var d = weekDays(settings.week);
+    var h = '<table><thead><tr><th></th>' + d.map(function(x, i){ return '<th class="' + (i > 4 ? "wk" : "") + '">' + DN[i] + '<br>' + ddmm(x) + '</th>'; }).join("") + '</tr></thead><tbody>';
+    if(!r.length) h += '<tr><td colspan="8" class="empty">Пока никто не отправил</td></tr>';
+    r.forEach(function(e){ h += '<tr><td class="n">' + esc(e.name) + '</td>' + e.days.map(function(v, i){ return '<td class="' + (i > 4 ? "wk " : "") + (v === "вых" ? "o" : "") + '">' + (v === "вых" ? "вых" : esc(v).replace("-", "<br>")) + '</td>'; }).join("") + '</tr>'; });
+    $("tbl").innerHTML = h + '</tbody></table>';
+  }).catch(function(){ $("tbl").innerHTML = '<div class="empty">Не удалось загрузить</div>'; });
+}
+$("refresh").addEventListener("click", loadAll);
+
+$("saveSet").addEventListener("click", function(){
+  var wd = $("wd").value, dl = $("dl").value; if(!wd || !dl) return say("setMsg", "Выберите неделю и срок", true);
+  var p = wd.split("-").map(Number), w = iso(monday(new Date(p[0], p[1]-1, p[2])));
+  api("settings?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: { id: 1, week: w, deadline: dl } })
+  .then(function(){ settings = { week: w, deadline: dl }; dirty = false; days = ["","","","","","",""]; custom = []; say("setMsg", "Сохранено ✓"); return loadMine(); })
+  .then(function(){ renderSub(); renderDays(); }).catch(function(){ say("setMsg", "Не удалось сохранить", true); });
+});
+
+document.querySelectorAll(".tab").forEach(function(t){ t.addEventListener("click", function(){
+  document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on", x === t); });
+  ["me","all","set"].forEach(function(k){ $(k).hidden = k !== t.dataset.t; });
+  $("send").hidden = t.dataset.t !== "me"; if(t.dataset.t === "all") loadAll();
+}); });
+
+if(isAdmin) $("tabs").hidden = false;
+api("settings?id=eq.1&select=week,deadline").then(function(r){
+  settings = r && r[0] || null;
+  if(settings){ $("wd").value = settings.week; $("dl").value = settings.deadline; return loadMine(); }
+  var m = monday(new Date()); m.setDate(m.getDate() + 7); $("wd").value = iso(m);
+}).catch(function(){ failed = true; $("sub").textContent = "Не удалось подключиться к базе. Проверьте настройки в начале файла."; })
+.then(function(){ renderSub(); renderDays(); if(DEMO) $("sub").textContent += " · демо: данные только в этом окне"; });
+</script>
+</body>
+</html>
